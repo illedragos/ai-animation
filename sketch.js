@@ -2,6 +2,9 @@ let particles = [];
 let numParticles = 100;
 let noiseScale = 0.01;
 let palette = [];
+let paletteDark = [];
+let paletteLight = [];
+let bgColor;
 
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight);
@@ -9,14 +12,28 @@ function setup() {
   pixelDensity(1);
   console.log("p5 setup — canvas created", width, height);
 
-  // color palette for particles
-  palette = [
+  // color palettes for dark and light themes
+  paletteDark = [
     color("#ff6b6b"),
     color("#ffd93d"),
     color("#6bcB77"),
     color("#4d96ff"),
     color("#a66dff"),
   ];
+
+  // darker/muted palette for light background (more contrast on light)
+  paletteLight = [
+    color("#a83232"),
+    color("#b8860b"),
+    color("#2f7f4f"),
+    color("#245caa"),
+    color("#6b3fa0"),
+  ];
+
+  // choose initial theme from body class
+  const initialIsLight = document.body.classList.contains("theme-light");
+  palette = initialIsLight ? paletteLight : paletteDark;
+  bgColor = initialIsLight ? color(245) : color(12);
 
   // scale particle count based on screen area (clamped)
   numParticles = constrain(Math.floor((width * height) / 15000), 80, 800);
@@ -35,11 +52,41 @@ function setup() {
     container.style.height = "100%";
     container.style.zIndex = "0";
   }
+
+  // Hook up theme toggle button
+  const btn = document.getElementById("theme-toggle");
+  if (btn) {
+    // set correct initial label/aria state
+    btn.textContent = initialIsLight ? "Dark Mode" : "Light Mode";
+    btn.setAttribute("aria-pressed", initialIsLight ? "true" : "false");
+
+    btn.addEventListener("click", () => {
+      const isNowLight = document.body.classList.toggle("theme-light");
+      if (isNowLight) document.body.classList.remove("theme-dark");
+      else document.body.classList.add("theme-dark");
+
+      // update button label/state
+      btn.textContent = isNowLight ? "Dark Mode" : "Light Mode";
+      btn.setAttribute("aria-pressed", isNowLight ? "true" : "false");
+
+      // apply theme changes to canvas and particles
+      applyTheme(isNowLight);
+    });
+  }
+}
+
+function applyTheme(isLight) {
+  palette = isLight ? paletteLight : paletteDark;
+  bgColor = isLight ? color(245) : color(12);
+  // recolor existing particles for immediate visual feedback
+  for (let p of particles) {
+    p.col = palette[floor(random(palette.length))];
+  }
 }
 
 function draw() {
-  // subtle dark background so colored particles pop
-  background(12);
+  // background uses the theme-aware color
+  background(bgColor);
 
   for (let i = 0; i < particles.length; i++) {
     particles[i].update();
